@@ -73,6 +73,11 @@ public:
    */
   void addExtraBounds(double mx0, double my0, double mx1, double my1);
 
+  struct Point {
+    double x;
+    double y;
+  };
+
 protected:
   /*
    * Updates the master_grid within the specified
@@ -152,6 +157,8 @@ protected:
    */
   void useExtraBounds(double * min_x, double * min_y, double * max_x, double * max_y);
   bool has_extra_bounds_;
+  bool isPointInPolygon(Point p, const std::vector<Point>& vertices);
+
 
 private:
   double extra_min_x_, extra_max_x_, extra_min_y_, extra_max_y_;
