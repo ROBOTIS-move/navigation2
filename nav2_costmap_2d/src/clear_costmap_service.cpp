@@ -182,15 +182,16 @@ void ClearCostmapService::clearLayerExceptRegion(
   unsigned int size_x = costmap->getSizeInCellsX();
   unsigned int size_y = costmap->getSizeInCellsY();
 
-  // Clearing the four rectangular regions around the one we want to keep
-  // top region
-  costmap->resetMapToValue(0, 0, size_x, start_y, reset_value_);
-  // left region
-  costmap->resetMapToValue(0, start_y, start_x, end_y, reset_value_);
-  // right region
-  costmap->resetMapToValue(end_x, start_y, size_x, end_y, reset_value_);
-  // bottom region
-  costmap->resetMapToValue(0, end_y, size_x, size_y, reset_value_);
+  // // Clearing the four rectangular regions around the one we want to keep
+  // // top region
+  // costmap->resetMapToValue(0, 0, size_x, start_y, reset_value_);
+  // // left region
+  // costmap->resetMapToValue(0, start_y, start_x, end_y, reset_value_);
+  // // right region
+  // costmap->resetMapToValue(end_x, start_y, size_x, end_y, reset_value_);
+  // // bottom region
+  // costmap->resetMapToValue(0, end_y, size_x, size_y, reset_value_);
+  costmap->clearArea(start_x, start_y, end_x, end_y, invert);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
