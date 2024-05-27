@@ -163,7 +163,12 @@ void ClearCostmapService::clearLayerExceptRegion(
   shared_ptr<CostmapLayer> & costmap, double pose_x, double pose_y, double reset_distance)
 {
   std::unique_lock<Costmap2D::mutex_t> lock(*(costmap->getMutex()));
-
+  geometry_msgs::msg::PoseStamped pose;
+  if (!costmap_.getRobotPose(pose)) {
+    return;
+  }
+  const double yaw = tf2::getYaw(pose.pose.orientation);
+  std::cout << yaw << std::endl;
   double start_point_x = pose_x - reset_distance / 2;
   double start_point_y = pose_y - reset_distance / 2;
   double end_point_x = start_point_x + reset_distance;
