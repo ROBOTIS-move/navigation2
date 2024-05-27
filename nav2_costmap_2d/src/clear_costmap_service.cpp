@@ -64,9 +64,9 @@ void ClearCostmapService::clearExceptRegionCallback(
   const shared_ptr<ClearExceptRegion::Request> request,
   const shared_ptr<ClearExceptRegion::Response>/*response*/)
 {
-  RCLCPP_INFO(
-    node_->get_logger(),
-    "Received request to clear except a region the " + costmap_.getName());
+  // RCLCPP_INFO(
+  //   node_->get_logger(),
+  //   "Received request to clear except a region the " + costmap_.getName());
 
   clearExceptRegion(request->reset_distance);
 }
@@ -76,9 +76,9 @@ void ClearCostmapService::clearAroundRobotCallback(
   const shared_ptr<ClearAroundRobot::Request> request,
   const shared_ptr<ClearAroundRobot::Response>/*response*/)
 {
-  RCLCPP_INFO(
-    node_->get_logger(),
-    "Received request to clear around robot the " + costmap_.getName());
+  // RCLCPP_INFO(
+  //   node_->get_logger(),
+  //   "Received request to clear around robot the " + costmap_.getName());
 
   if ((request->window_size_x == 0) || (request->window_size_y == 0)) {
     clearEntirely();
@@ -93,7 +93,7 @@ void ClearCostmapService::clearEntireCallback(
   const std::shared_ptr<ClearEntirely::Request>/*request*/,
   const std::shared_ptr<ClearEntirely::Response>/*response*/)
 {
-  RCLCPP_INFO(node_->get_logger(), "Received request to clear entirely the " + costmap_.getName());
+  // RCLCPP_INFO(node_->get_logger(), "Received request to clear entirely the " + costmap_.getName());
 
   clearEntirely();
 }
@@ -166,7 +166,7 @@ void ClearCostmapService::clearLayerExceptRegion(
 
   double start_point_x = pose_x - reset_distance / 2;
   double start_point_y = pose_y - reset_distance / 2;
-  double end_point_x = start_point_x + reset_distance;
+  double end_point_x = pose_x + 0.269;
   double end_point_y = start_point_y + reset_distance;
 
   int start_x, start_y, end_x, end_y;
