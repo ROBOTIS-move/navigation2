@@ -176,21 +176,9 @@ void ClearCostmapService::clearLayerExceptRegion(
   double end_point_y = pose_y + (reset_distance / 2) * cos(yaw);
 
   int start_x, start_y, end_x, end_y;
-  costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
-  costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
+  costmap->worldToMapEnforceBounds(start_point_x, start_point_y, start_x, start_y);
+  costmap->worldToMapEnforceBounds(end_point_x, end_point_y, end_x, end_y);
 
-  unsigned int size_x = costmap->getSizeInCellsX();
-  unsigned int size_y = costmap->getSizeInCellsY();
-
-  // // Clearing the four rectangular regions around the one we want to keep
-  // // top region
-  // costmap->resetMapToValue(0, 0, size_x, start_y, reset_value_);
-  // // left region
-  // costmap->resetMapToValue(0, start_y, start_x, end_y, reset_value_);
-  // // right region
-  // costmap->resetMapToValue(end_x, start_y, size_x, end_y, reset_value_);
-  // // bottom region
-  // costmap->resetMapToValue(0, end_y, size_x, size_y, reset_value_);
   costmap->clearArea(start_x, start_y, end_x, end_y);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
