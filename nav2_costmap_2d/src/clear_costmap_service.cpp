@@ -191,7 +191,7 @@ void ClearCostmapService::clearLayerExceptRegion(
   // costmap->resetMapToValue(end_x, start_y, size_x, end_y, reset_value_);
   // // bottom region
   // costmap->resetMapToValue(0, end_y, size_x, size_y, reset_value_);
-  costmap->clearArea(start_x, start_y, end_x, end_y, invert);
+  costmap->clearArea(start_x, start_y, end_x, end_y);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
