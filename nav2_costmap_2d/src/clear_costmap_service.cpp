@@ -28,24 +28,35 @@ using std::string;
 using std::shared_ptr;
 using std::any_of;
 using ClearExceptRegion = nav2_msgs::srv::ClearCostmapExceptRegion;
+using ClearAroundRobot = nav2_msgs::srv::ClearCostmapAroundRobot;
 using ClearEntirely = nav2_msgs::srv::ClearEntireCostmap;
 
-ClearCostmapService::ClearCostmapService(rclcpp::Node::SharedPtr & node, Costmap2DROS & costmap)
+ClearCostmapService::ClearCostmapService(
+  nav2_util::LifecycleNode::SharedPtr node,
+  Costmap2DROS & costmap)
 : node_(node), costmap_(costmap)
 {
   reset_value_ = costmap_.getCostmap()->getDefaultValue();
 
-  node_->get_parameter_or_set("clearable_layers", clearable_layers_, {"obstacle_layer"});
+  node_->get_parameter("clearable_layers", clearable_layers_);
 
   clear_except_service_ = node_->create_service<ClearExceptRegion>(
     "clear_except_" + costmap_.getName(),
-    std::bind(&ClearCostmapService::clearExceptRegionCallback, this,
-    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    std::bind(
+      &ClearCostmapService::clearExceptRegionCallback, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+  clear_around_service_ = node_->create_service<ClearAroundRobot>(
+    "clear_around_" + costmap.getName(),
+    std::bind(
+      &ClearCostmapService::clearAroundRobotCallback, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
   clear_entire_service_ = node_->create_service<ClearEntirely>(
     "clear_entirely_" + costmap_.getName(),
-    std::bind(&ClearCostmapService::clearEntireCallback, this,
-    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    std::bind(
+      &ClearCostmapService::clearEntireCallback, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 void ClearCostmapService::clearExceptRegionCallback(
@@ -53,10 +64,28 @@ void ClearCostmapService::clearExceptRegionCallback(
   const shared_ptr<ClearExceptRegion::Request> request,
   const shared_ptr<ClearExceptRegion::Response>/*response*/)
 {
-  RCLCPP_INFO(node_->get_logger(),
+  RCLCPP_INFO(
+    node_->get_logger(),
     "Received request to clear except a region the " + costmap_.getName());
 
   clearExceptRegion(request->reset_distance);
+}
+
+void ClearCostmapService::clearAroundRobotCallback(
+  const shared_ptr<rmw_request_id_t>/*request_header*/,
+  const shared_ptr<ClearAroundRobot::Request> request,
+  const shared_ptr<ClearAroundRobot::Response>/*response*/)
+{
+  RCLCPP_INFO(
+    node_->get_logger(),
+    "Received request to clear around robot the " + costmap_.getName());
+
+  if ((request->window_size_x == 0) || (request->window_size_y == 0)) {
+    clearEntirely();
+    return;
+  }
+
+  clearAroundRobot(request->window_size_x, request->window_size_y);
 }
 
 void ClearCostmapService::clearEntireCallback(
@@ -86,6 +115,37 @@ void ClearCostmapService::clearExceptRegion(const double reset_distance)
       clearLayerExceptRegion(costmap_layer, x, y, reset_distance);
     }
   }
+}
+
+void ClearCostmapService::clearAroundRobot(double window_size_x, double window_size_y)
+{
+  double pose_x, pose_y;
+
+  if (!getPosition(pose_x, pose_y)) {
+    RCLCPP_ERROR(node_->get_logger(), "Cannot clear map because robot pose cannot be retrieved.");
+    return;
+  }
+
+  std::vector<geometry_msgs::msg::Point> clear_poly;
+  geometry_msgs::msg::Point pt;
+
+  pt.x = pose_x - window_size_x / 2;
+  pt.y = pose_y - window_size_y / 2;
+  clear_poly.push_back(pt);
+
+  pt.x = pose_x + window_size_x / 2;
+  pt.y = pose_y - window_size_y / 2;
+  clear_poly.push_back(pt);
+
+  pt.x = pose_x + window_size_x / 2;
+  pt.y = pose_y + window_size_y / 2;
+  clear_poly.push_back(pt);
+
+  pt.x = pose_x - window_size_x / 2;
+  pt.y = pose_y + window_size_y / 2;
+  clear_poly.push_back(pt);
+
+  costmap_.getCostmap()->setConvexPolygonCost(clear_poly, reset_value_);
 }
 
 void ClearCostmapService::clearEntirely()
@@ -148,7 +208,7 @@ string ClearCostmapService::getLayerName(const Layer & layer) const
 {
   string name = layer.getName();
 
-  int slash = name.rfind('/');
+  size_t slash = name.rfind('/');
 
   if (slash != std::string::npos) {
     name = name.substr(slash + 1);

@@ -126,6 +126,14 @@ public:
   unsigned char getCost(unsigned int mx, unsigned int my) const;
 
   /**
+   * @brief  Get the cost of a cell in the costmap
+   * @param mx The x coordinate of the cell
+   * @param my The y coordinate of the cell
+   * @return The cost of the cell
+   */
+  unsigned char getCost(unsigned int index) const;
+
+  /**
    * @brief  Set the cost of a cell in the costmap
    * @param mx The x coordinate of the cell
    * @param my The y coordinate of the cell
@@ -402,14 +410,16 @@ protected:
     // if x is dominant
     if (abs_dx >= abs_dy) {
       int error_y = abs_dx / 2;
-      bresenham2D(at, abs_dx, abs_dy, error_y, offset_dx, offset_dy, offset,
+      bresenham2D(
+        at, abs_dx, abs_dy, error_y, offset_dx, offset_dy, offset,
         (unsigned int)(scale * abs_dx));
       return;
     }
 
     // otherwise y is dominant
     int error_x = abs_dy / 2;
-    bresenham2D(at, abs_dy, abs_dx, error_x, offset_dy, offset_dx, offset,
+    bresenham2D(
+      at, abs_dy, abs_dx, error_x, offset_dy, offset_dx, offset,
       (unsigned int)(scale * abs_dy));
   }
 
@@ -453,9 +463,10 @@ protected:
   unsigned char * costmap_;
   unsigned char default_value_;
 
+  // *INDENT-OFF* Uncrustify doesn't handle indented public/private labels
   class MarkCell
   {
-public:
+  public:
     MarkCell(unsigned char * costmap, unsigned char value)
     : costmap_(costmap), value_(value)
     {
@@ -465,18 +476,18 @@ public:
       costmap_[offset] = value_;
     }
 
-private:
+  private:
     unsigned char * costmap_;
     unsigned char value_;
   };
 
   class PolygonOutlineCells
   {
-public:
+  public:
     PolygonOutlineCells(
-      const Costmap2D & costmap, const unsigned char * char_map,
+      const Costmap2D & costmap, const unsigned char * /*char_map*/,
       std::vector<MapLocation> & cells)
-    : costmap_(costmap), char_map_(char_map), cells_(cells)
+    : costmap_(costmap), cells_(cells)
     {
     }
 
@@ -488,11 +499,11 @@ public:
       cells_.push_back(loc);
     }
 
-private:
+  private:
     const Costmap2D & costmap_;
-    const unsigned char * char_map_;
     std::vector<MapLocation> & cells_;
   };
+  // *INDENT-ON*
 };
 }  // namespace nav2_costmap_2d
 

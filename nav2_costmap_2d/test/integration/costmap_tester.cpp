@@ -41,7 +41,6 @@
 #include "tf2_ros/transform_listener.h"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
-#include "nav2_util/duration_conversions.hpp"
 
 namespace nav2_costmap_2d
 {
@@ -118,7 +117,8 @@ void CostmapTester::compareCells(
     // if the cell is a lethal obstacle,
     // then we know that all its neighbors should have equal or slighlty less cost
     unsigned char expected_lowest_cost = 0;
-    EXPECT_TRUE(neighbor_cost >= expected_lowest_cost ||
+    EXPECT_TRUE(
+      neighbor_cost >= expected_lowest_cost ||
       (cell_distance > 0 && neighbor_cost == nav2_costmap_2d::FREE_SPACE));
   } else if (cell_cost == nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
     // the furthest valid distance from an obstacle
@@ -126,16 +126,19 @@ void CostmapTester::compareCells(
     double furthest_valid_distance = 0;
     unsigned char expected_lowest_cost = 0;
     if (neighbor_cost < expected_lowest_cost) {
-      RCLCPP_ERROR(rclcpp::get_logger(
+      RCLCPP_ERROR(
+        rclcpp::get_logger(
           "costmap_tester"),
         "Cell cost (%d, %d): %d, neighbor cost (%d, %d): %d, expected lowest cost: %d, cell distance: %.2f, furthest valid distance: %.2f", // NOLINT
         x, y, cell_cost, nx, ny, neighbor_cost, expected_lowest_cost,
         cell_distance, furthest_valid_distance);
-      RCLCPP_ERROR(rclcpp::get_logger("costmap_tester"), "Cell: (%d, %d), Neighbor: (%d, %d)",
+      RCLCPP_ERROR(
+        rclcpp::get_logger("costmap_tester"), "Cell: (%d, %d), Neighbor: (%d, %d)",
         x, y, nx, ny);
       costmap.saveMap("failing_costmap.pgm");
     }
-    EXPECT_TRUE(neighbor_cost >= expected_lowest_cost ||
+    EXPECT_TRUE(
+      neighbor_cost >= expected_lowest_cost ||
       (furthest_valid_distance > 0 && neighbor_cost == nav2_costmap_2d::FREE_SPACE));
   }
 }
@@ -158,7 +161,7 @@ void testCallback()
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("costmap_tester");
+  auto node = nav2_util::LifecycleNode::make_shared("costmap_tester");
   testing::InitGoogleTest(&argc, argv);
 
   tf_ = new tf2_ros::Buffer(node->get_clock());

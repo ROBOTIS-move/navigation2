@@ -4,15 +4,19 @@ project(nav2_navfn_planner)
 find_package(ament_cmake REQUIRED)
 find_package(nav2_common REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(nav2_tasks REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(nav2_core REQUIRED)
 find_package(nav2_msgs REQUIRED)
-find_package(nav2_robot REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(nav2_costmap_2d REQUIRED)
+find_package(pluginlib REQUIRED)
 
 nav2_package()
 
@@ -20,20 +24,23 @@ include_directories(
   include
 )
 
-set(executable_name navfn_planner)
-set(library_name ${executable_name}_core)
+set(library_name nav2_navfn_planner)
 
 set(dependencies
   rclcpp
+  rclcpp_action
+  rclcpp_lifecycle
   std_msgs
   visualization_msgs
   nav2_util
-  nav2_tasks
   nav2_msgs
-  nav2_robot
   nav_msgs
   geometry_msgs
   builtin_interfaces
+  tf2_ros
+  nav2_costmap_2d
+  nav2_core
+  pluginlib
 )
 
 add_library(${library_name} SHARED
@@ -45,24 +52,23 @@ ament_target_dependencies(${library_name}
   ${dependencies}
 )
 
-add_executable(${executable_name}
-  src/main.cpp
-)
+# prevent pluginlib from using boost
+target_compile_definitions(${library_name} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-target_link_libraries(${executable_name} ${library_name})
+pluginlib_export_plugin_description_file(nav2_core global_planner_plugin.xml)
 
-ament_target_dependencies(${executable_name}
-  ${dependencies}
-)
-
-install(TARGETS ${executable_name} ${library_name}
+install(TARGETS ${library_name}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/
   DESTINATION include/
+)
+
+install(FILES global_planner_plugin.xml
+  DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -72,5 +78,6 @@ endif()
 
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})
-
+ament_export_dependencies(${dependencies})
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 ament_package()

@@ -32,10 +32,24 @@ string sanitize_node_name(const string & potential_node_name)
   string node_name(potential_node_name);
   // read this as `replace` characters in `node_name` `if` not alphanumeric.
   // replace with '_'
-  replace_if(begin(node_name), end(node_name),
+  replace_if(
+    begin(node_name), end(node_name),
     [](auto c) {return !isalnum(c);},
     '_');
   return node_name;
+}
+
+string add_namespaces(const string & top_ns, const string & sub_ns)
+{
+  if (!top_ns.empty() && top_ns.back() == '/') {
+    if (top_ns.front() == '/') {
+      return top_ns + sub_ns;
+    } else {
+      return "/" + top_ns + sub_ns;
+    }
+  }
+
+  return top_ns + "/" + sub_ns;
 }
 
 std::string time_to_string(size_t len)
@@ -46,12 +60,14 @@ std::string time_to_string(size_t len)
   auto timestring = to_string(timecount);
   if (timestring.length() >= len) {
     // if `timestring` is shorter, put it at the end of `output`
-    output.replace(0, len,
+    output.replace(
+      0, len,
       timestring,
       timestring.length() - len, len);
   } else {
     // if `output` is shorter, just copy in the end of `timestring`
-    output.replace(len - timestring.length(), timestring.length(),
+    output.replace(
+      len - timestring.length(), timestring.length(),
       timestring,
       0, timestring.length());
   }
@@ -65,11 +81,21 @@ std::string generate_internal_node_name(const std::string & prefix)
 
 rclcpp::Node::SharedPtr generate_internal_node(const std::string & prefix)
 {
+  auto options =
+    rclcpp::NodeOptions()
+    .start_parameter_services(false)
+    .start_parameter_event_publisher(false)
+    .arguments({"--ros-args", "-r", "__node:=" + generate_internal_node_name(prefix), "--"});
+  return rclcpp::Node::make_shared("_", options);
+}
+
+rclcpp::NodeOptions
+get_node_options_default(bool allow_undeclared, bool declare_initial_params)
+{
   rclcpp::NodeOptions options;
-  options.use_global_arguments(false);
-  options.start_parameter_services(false);
-  options.start_parameter_event_publisher(false);
-  return rclcpp::Node::make_shared(generate_internal_node_name(prefix));
+  options.allow_undeclared_parameters(allow_undeclared);
+  options.automatically_declare_parameters_from_overrides(declare_initial_params);
+  return options;
 }
 
 }  // namespace nav2_util

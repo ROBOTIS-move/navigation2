@@ -10,7 +10,6 @@ find_package(nav_2d_utils REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(nav2_dynamic_params REQUIRED)
 
 nav2_package()
 
@@ -22,19 +21,11 @@ set(dependencies
   pluginlib
   rclcpp
   nav2_util
-  nav2_dynamic_params
 )
 
 include_directories(
   include
 )
-
-add_library(simple_goal_checker SHARED src/simple_goal_checker.cpp)
-ament_target_dependencies(simple_goal_checker ${dependencies})
-
-add_library(stopped_goal_checker SHARED src/stopped_goal_checker.cpp)
-target_link_libraries(stopped_goal_checker simple_goal_checker)
-ament_target_dependencies(stopped_goal_checker ${dependencies})
 
 add_library(standard_traj_generator SHARED
             src/standard_traj_generator.cpp
@@ -42,6 +33,9 @@ add_library(standard_traj_generator SHARED
             src/kinematic_parameters.cpp
             src/xy_theta_iterator.cpp)
 ament_target_dependencies(standard_traj_generator ${dependencies})
+# prevent pluginlib from using boost
+target_compile_definitions(standard_traj_generator PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -53,22 +47,21 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-install(TARGETS simple_goal_checker stopped_goal_checker standard_traj_generator
+install(TARGETS standard_traj_generator
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
-        RUNTIME DESTINATION lib/${PROJECT_NAME}
+        RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/
         DESTINATION include/
 )
 install(FILES plugins.xml
-        DESTINATION share
+        DESTINATION share/${PROJECT_NAME}
 )
 
 ament_export_include_directories(include)
-ament_export_libraries(simple_goal_checker)
-ament_export_libraries(stopped_goal_checker)
 ament_export_libraries(standard_traj_generator)
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 pluginlib_export_plugin_description_file(dwb_core plugins.xml)
 
 ament_package()

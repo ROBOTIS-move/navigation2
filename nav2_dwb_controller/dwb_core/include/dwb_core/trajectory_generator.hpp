@@ -36,10 +36,12 @@
 #define DWB_CORE__TRAJECTORY_GENERATOR_HPP_
 
 #include <vector>
+#include <string>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 #include "nav_2d_msgs/msg/twist2_d.hpp"
 #include "dwb_msgs/msg/trajectory2_d.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 
 namespace dwb_core
 {
@@ -70,8 +72,10 @@ public:
    * @brief Initialize parameters as needed
    * @param nh NodeHandle to read parameters from
    */
-  virtual void initialize(const std::shared_ptr<rclcpp::Node> & nh) = 0;
-
+  virtual void initialize(
+    const nav2_util::LifecycleNode::SharedPtr & nh,
+    const std::string & plugin_name) = 0;
+  virtual void reset() {}
   /**
    * @brief Start a new iteration based on the current velocity
    * @param current_velocity

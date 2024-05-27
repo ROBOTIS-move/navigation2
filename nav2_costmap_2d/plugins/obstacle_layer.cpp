@@ -43,10 +43,8 @@
 #include <string>
 #include <vector>
 
-#include "tf2_ros/message_filter.h"
 #include "pluginlib/class_list_macros.hpp"
 #include "sensor_msgs/point_cloud2_iterator.hpp"
-#include "nav2_util/duration_conversions.hpp"
 #include "nav2_costmap_2d/costmap_math.hpp"
 
 PLUGINLIB_EXPORT_CLASS(nav2_costmap_2d::ObstacleLayer, nav2_costmap_2d::Layer)
@@ -61,18 +59,42 @@ using nav2_costmap_2d::Observation;
 namespace nav2_costmap_2d
 {
 
+ObstacleLayer::~ObstacleLayer()
+{
+  for (auto & notifier : observation_notifiers_) {
+    notifier.reset();
+  }
+}
+
 void ObstacleLayer::onInitialize()
 {
-  node_->get_parameter_or_set(name_ + "." + "enabled", enabled_, true);
-  node_->get_parameter_or_set(
-    name_ + "." + "footprint_clearing_enabled", footprint_clearing_enabled_, true);
-  node_->get_parameter_or_set(name_ + "." + "max_obstacle_height", max_obstacle_height_, 2.0);
-  node_->get_parameter_or_set(name_ + "." + "combination_method", combination_method_, 1);
+  bool track_unknown_space;
+  double transform_tolerance;
+
+  // The topics that we'll subscribe to from the parameter server
+  std::string topics_string;
+
+  // TODO(mjeronimo): these four are candidates for dynamic update
+  declareParameter("enabled", rclcpp::ParameterValue(true));
+  declareParameter(
+    "footprint_clearing_enabled",
+    rclcpp::ParameterValue(true));
+  declareParameter("max_obstacle_height", rclcpp::ParameterValue(2.0));
+  declareParameter("combination_method", rclcpp::ParameterValue(1));
+  declareParameter("observation_sources", rclcpp::ParameterValue(std::string("")));
+
+  node_->get_parameter(name_ + "." + "enabled", enabled_);
+  node_->get_parameter(name_ + "." + "footprint_clearing_enabled", footprint_clearing_enabled_);
+  node_->get_parameter(name_ + "." + "max_obstacle_height", max_obstacle_height_);
+  node_->get_parameter(name_ + "." + "combination_method", combination_method_);
+  node_->get_parameter("track_unknown_space", track_unknown_space);
+  node_->get_parameter("transform_tolerance", transform_tolerance);
+  node_->get_parameter(name_ + "." + "observation_sources", topics_string);
+
+  RCLCPP_INFO(node_->get_logger(), "Subscribed to Topics: %s", topics_string.c_str());
 
   rolling_window_ = layered_costmap_->isRolling();
-  bool track_unknown_space;
-  node_->get_parameter_or(
-    "track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
+
   if (track_unknown_space) {
     default_value_ = NO_INFORMATION;
   } else {
@@ -83,14 +105,6 @@ void ObstacleLayer::onInitialize()
   current_ = true;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
-  double transform_tolerance;
-  node_->get_parameter_or("transform_tolerance", transform_tolerance, 0.2);
-
-  // get the topics that we'll subscribe to from the parameter server
-  std::string topics_string;
-  node_->get_parameter_or("observation_sources", topics_string, std::string(""));
-
-  RCLCPP_INFO(node_->get_logger(), "Subscribed to Topics: %s", topics_string.c_str());
 
   // now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
@@ -102,19 +116,37 @@ void ObstacleLayer::onInitialize()
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
 
-    node_->get_parameter_or(source + "." + "topic", topic, source);
-    node_->get_parameter_or(source + "." + "sensor_frame", sensor_frame, std::string(""));
-    node_->get_parameter_or(source + "." + "observation_persistence", observation_keep_time, 0.0);
-    node_->get_parameter_or(source + "." + "expected_update_rate", expected_update_rate, 0.0);
-    node_->get_parameter_or(source + "." + "data_type", data_type, std::string("LaserScan"));
-    node_->get_parameter_or(source + "." + "min_obstacle_height", min_obstacle_height, 0.0);
-    node_->get_parameter_or(source + "." + "max_obstacle_height", max_obstacle_height, 0.0);
-    node_->get_parameter_or(source + "." + "inf_is_valid", inf_is_valid, false);
-    node_->get_parameter_or(source + "." + "marking", marking, true);
-    node_->get_parameter_or(source + "." + "clearing", clearing, false);
+    declareParameter(source + "." + "topic", rclcpp::ParameterValue(source));
+    declareParameter(source + "." + "sensor_frame", rclcpp::ParameterValue(std::string("")));
+    declareParameter(source + "." + "observation_persistence", rclcpp::ParameterValue(0.0));
+    declareParameter(source + "." + "expected_update_rate", rclcpp::ParameterValue(0.0));
+    declareParameter(source + "." + "data_type", rclcpp::ParameterValue(std::string("LaserScan")));
+    declareParameter(source + "." + "min_obstacle_height", rclcpp::ParameterValue(0.0));
+    declareParameter(source + "." + "max_obstacle_height", rclcpp::ParameterValue(0.0));
+    declareParameter(source + "." + "inf_is_valid", rclcpp::ParameterValue(false));
+    declareParameter(source + "." + "marking", rclcpp::ParameterValue(true));
+    declareParameter(source + "." + "clearing", rclcpp::ParameterValue(false));
+    declareParameter(source + "." + "obstacle_range", rclcpp::ParameterValue(2.5));
+    declareParameter(source + "." + "raytrace_range", rclcpp::ParameterValue(3.0));
+
+    node_->get_parameter(name_ + "." + source + "." + "topic", topic);
+    node_->get_parameter(name_ + "." + source + "." + "sensor_frame", sensor_frame);
+    node_->get_parameter(
+      name_ + "." + source + "." + "observation_persistence",
+      observation_keep_time);
+    node_->get_parameter(
+      name_ + "." + source + "." + "expected_update_rate",
+      expected_update_rate);
+    node_->get_parameter(name_ + "." + source + "." + "data_type", data_type);
+    node_->get_parameter(name_ + "." + source + "." + "min_obstacle_height", min_obstacle_height);
+    node_->get_parameter(name_ + "." + source + "." + "max_obstacle_height", max_obstacle_height);
+    node_->get_parameter(name_ + "." + source + "." + "inf_is_valid", inf_is_valid);
+    node_->get_parameter(name_ + "." + source + "." + "marking", marking);
+    node_->get_parameter(name_ + "." + source + "." + "clearing", clearing);
 
     if (!(data_type == "PointCloud2" || data_type == "LaserScan")) {
-      RCLCPP_FATAL(node_->get_logger(),
+      RCLCPP_FATAL(
+        node_->get_logger(),
         "Only topics that use point cloud2s or laser scans are currently supported");
       throw std::runtime_error(
               "Only topics that use point cloud2s or laser scans are currently supported");
@@ -122,13 +154,14 @@ void ObstacleLayer::onInitialize()
 
     // get the obstacle range for the sensor
     double obstacle_range;
-    node_->get_parameter_or(source + "." + "obstacle_range", obstacle_range, 2.5);
+    node_->get_parameter(name_ + "." + source + "." + "obstacle_range", obstacle_range);
 
     // get the raytrace range for the sensor
     double raytrace_range;
-    node_->get_parameter_or(source + "." + "raytrace_range", raytrace_range, 3.0);
+    node_->get_parameter(name_ + "." + source + "." + "raytrace_range", raytrace_range);
 
-    RCLCPP_DEBUG(node_->get_logger(),
+    RCLCPP_DEBUG(
+      node_->get_logger(),
       "Creating an observation buffer for source %s, topic %s, frame %s",
       source.c_str(), topic.c_str(),
       sensor_frame.c_str());
@@ -136,10 +169,12 @@ void ObstacleLayer::onInitialize()
     // create an observation buffer
     observation_buffers_.push_back(
       std::shared_ptr<ObservationBuffer
-      >(new ObservationBuffer(node_, topic, observation_keep_time, expected_update_rate,
-      min_obstacle_height,
-      max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
-      sensor_frame, transform_tolerance)));
+      >(
+        new ObservationBuffer(
+          node_, topic, observation_keep_time, expected_update_rate,
+          min_obstacle_height,
+          max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
+          sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
     if (marking) {
@@ -151,54 +186,63 @@ void ObstacleLayer::onInitialize()
       clearing_buffers_.push_back(observation_buffers_.back());
     }
 
-    RCLCPP_DEBUG(node_->get_logger(),
+    RCLCPP_DEBUG(
+      node_->get_logger(),
       "Created an observation buffer for source %s, topic %s, global frame: %s, "
       "expected update rate: %.2f, observation persistence: %.2f",
       source.c_str(), topic.c_str(),
       global_frame_.c_str(), expected_update_rate, observation_keep_time);
 
-    rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_default;
+    rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
     custom_qos_profile.depth = 50;
 
     // create a callback for the topic
     if (data_type == "LaserScan") {
-      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::LaserScan>
-      > sub(new message_filters::Subscriber<sensor_msgs::msg::LaserScan>(
-          node_, topic, custom_qos_profile));
+      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::LaserScan>> sub(
+        new message_filters::Subscriber<sensor_msgs::msg::LaserScan>(
+          rclcpp_node_, topic, custom_qos_profile));
+      sub->unsubscribe();
 
       std::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>> filter(
         new tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>(
-          *sub, *tf_, global_frame_, 50, node_));
+          *sub, *tf_, global_frame_, 50, rclcpp_node_, tf2::durationFromSec(transform_tolerance)));
 
       if (inf_is_valid) {
-        filter->registerCallback(std::bind(
+        filter->registerCallback(
+          std::bind(
             &ObstacleLayer::laserScanValidInfCallback, this, std::placeholders::_1,
             observation_buffers_.back()));
 
       } else {
-        filter->registerCallback(std::bind(
+        filter->registerCallback(
+          std::bind(
             &ObstacleLayer::laserScanCallback, this, std::placeholders::_1,
             observation_buffers_.back()));
       }
 
       observation_subscribers_.push_back(sub);
-      observation_notifiers_.push_back(filter);
 
-      observation_notifiers_.back()->setTolerance(nav2_util::duration_from_seconds(0.05));
+      observation_notifiers_.push_back(filter);
+      observation_notifiers_.back()->setTolerance(rclcpp::Duration::from_seconds(0.05));
+
     } else {
-      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>
-      > sub(new message_filters::Subscriber<sensor_msgs::msg::PointCloud2>(
-          node_, topic, custom_qos_profile));
+      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> sub(
+        new message_filters::Subscriber<sensor_msgs::msg::PointCloud2>(
+          rclcpp_node_, topic, custom_qos_profile));
+      sub->unsubscribe();
 
       if (inf_is_valid) {
-        RCLCPP_WARN(node_->get_logger(),
+        RCLCPP_WARN(
+          node_->get_logger(),
           "obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
       }
 
-      std::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>
-      > filter(new tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>(
-          *sub, *tf_, global_frame_, 50, node_));
-      filter->registerCallback(std::bind(
+      std::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>> filter(
+        new tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>(
+          *sub, *tf_, global_frame_, 50, rclcpp_node_, tf2::durationFromSec(transform_tolerance)));
+
+      filter->registerCallback(
+        std::bind(
           &ObstacleLayer::pointCloud2Callback, this, std::placeholders::_1,
           observation_buffers_.back()));
 
@@ -213,40 +257,10 @@ void ObstacleLayer::onInitialize()
       observation_notifiers_.back()->setTargetFrames(target_frames);
     }
   }
-  setupDynamicReconfigure();
 }
 
-void ObstacleLayer::setupDynamicReconfigure()
-{
-  dynamic_param_client_ = std::make_unique<nav2_dynamic_params::DynamicParamsClient>(node_);
-  dynamic_param_client_->add_parameters({
-      name_ + "." + "enabled",
-      name_ + "." + "footprint_clearing_enabled",
-      name_ + "." + "max_obstacle_height",
-      name_ + "." + "combination_method"
-    });
-  dynamic_param_client_->set_callback(std::bind(&ObstacleLayer::reconfigureCB, this), false);
-}
-
-ObstacleLayer::~ObstacleLayer()
-{
-}
-
-void ObstacleLayer::reconfigureCB()
-{
-  RCLCPP_DEBUG(node_->get_logger(), "ObstacleLayer:: Event Callback");
-
-  dynamic_param_client_->get_event_param(
-    name_ + "." + "enabled", enabled_);
-  dynamic_param_client_->get_event_param(
-    name_ + "." + "footprint_clearing_enabled", footprint_clearing_enabled_);
-  dynamic_param_client_->get_event_param(
-    name_ + "." + "max_obstacle_height", max_obstacle_height_);
-  dynamic_param_client_->get_event_param(
-    name_ + "." + "combination_method", combination_method_);
-}
-
-void ObstacleLayer::laserScanCallback(
+void
+ObstacleLayer::laserScanCallback(
   sensor_msgs::msg::LaserScan::ConstSharedPtr message,
   const std::shared_ptr<nav2_costmap_2d::ObservationBuffer> & buffer)
 {
@@ -258,7 +272,8 @@ void ObstacleLayer::laserScanCallback(
   try {
     projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
   } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(node_->get_logger(),
+    RCLCPP_WARN(
+      node_->get_logger(),
       "High fidelity enabled, but TF returned a transform exception to frame %s: %s",
       global_frame_.c_str(),
       ex.what());
@@ -271,7 +286,8 @@ void ObstacleLayer::laserScanCallback(
   buffer->unlock();
 }
 
-void ObstacleLayer::laserScanValidInfCallback(
+void
+ObstacleLayer::laserScanValidInfCallback(
   sensor_msgs::msg::LaserScan::ConstSharedPtr raw_message,
   const std::shared_ptr<nav2_costmap_2d::ObservationBuffer> & buffer)
 {
@@ -293,7 +309,8 @@ void ObstacleLayer::laserScanValidInfCallback(
   try {
     projector_.transformLaserScanToPointCloud(message.header.frame_id, message, cloud, *tf_);
   } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(node_->get_logger(),
+    RCLCPP_WARN(
+      node_->get_logger(),
       "High fidelity enabled, but TF returned a transform exception to frame %s: %s",
       global_frame_.c_str(), ex.what());
     projector_.projectLaser(message, cloud);
@@ -305,7 +322,8 @@ void ObstacleLayer::laserScanValidInfCallback(
   buffer->unlock();
 }
 
-void ObstacleLayer::pointCloud2Callback(
+void
+ObstacleLayer::pointCloud2Callback(
   sensor_msgs::msg::PointCloud2::ConstSharedPtr message,
   const std::shared_ptr<ObservationBuffer> & buffer)
 {
@@ -315,7 +333,8 @@ void ObstacleLayer::pointCloud2Callback(
   buffer->unlock();
 }
 
-void ObstacleLayer::updateBounds(
+void
+ObstacleLayer::updateBounds(
   double robot_x, double robot_y, double robot_yaw, double * min_x,
   double * min_y, double * max_x, double * max_y)
 {
@@ -395,7 +414,8 @@ void ObstacleLayer::updateBounds(
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
-void ObstacleLayer::updateFootprint(
+void
+ObstacleLayer::updateFootprint(
   double robot_x, double robot_y, double robot_yaw,
   double * min_x, double * min_y,
   double * max_x,
@@ -409,7 +429,8 @@ void ObstacleLayer::updateFootprint(
   }
 }
 
-void ObstacleLayer::updateCosts(
+void
+ObstacleLayer::updateCosts(
   nav2_costmap_2d::Costmap2D & master_grid, int min_i, int min_j,
   int max_i,
   int max_j)
@@ -434,7 +455,8 @@ void ObstacleLayer::updateCosts(
   }
 }
 
-void ObstacleLayer::addStaticObservation(
+void
+ObstacleLayer::addStaticObservation(
   nav2_costmap_2d::Observation & obs,
   bool marking, bool clearing)
 {
@@ -446,7 +468,8 @@ void ObstacleLayer::addStaticObservation(
   }
 }
 
-void ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
+void
+ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
 {
   if (marking) {
     static_marking_observations_.clear();
@@ -456,7 +479,8 @@ void ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
   }
 }
 
-bool ObstacleLayer::getMarkingObservations(std::vector<Observation> & marking_observations) const
+bool
+ObstacleLayer::getMarkingObservations(std::vector<Observation> & marking_observations) const
 {
   bool current = true;
   // get the marking observations
@@ -466,12 +490,14 @@ bool ObstacleLayer::getMarkingObservations(std::vector<Observation> & marking_ob
     current = marking_buffers_[i]->isCurrent() && current;
     marking_buffers_[i]->unlock();
   }
-  marking_observations.insert(marking_observations.end(),
+  marking_observations.insert(
+    marking_observations.end(),
     static_marking_observations_.begin(), static_marking_observations_.end());
   return current;
 }
 
-bool ObstacleLayer::getClearingObservations(std::vector<Observation> & clearing_observations) const
+bool
+ObstacleLayer::getClearingObservations(std::vector<Observation> & clearing_observations) const
 {
   bool current = true;
   // get the clearing observations
@@ -481,12 +507,14 @@ bool ObstacleLayer::getClearingObservations(std::vector<Observation> & clearing_
     current = clearing_buffers_[i]->isCurrent() && current;
     clearing_buffers_[i]->unlock();
   }
-  clearing_observations.insert(clearing_observations.end(),
+  clearing_observations.insert(
+    clearing_observations.end(),
     static_clearing_observations_.begin(), static_clearing_observations_.end());
   return current;
 }
 
-void ObstacleLayer::raytraceFreespace(
+void
+ObstacleLayer::raytraceFreespace(
   const Observation & clearing_observation, double * min_x,
   double * min_y,
   double * max_x,
@@ -499,7 +527,8 @@ void ObstacleLayer::raytraceFreespace(
   // get the map coordinates of the origin of the sensor
   unsigned int x0, y0;
   if (!worldToMap(ox, oy, x0, y0)) {
-    RCLCPP_WARN(node_->get_logger(),
+    RCLCPP_WARN(
+      node_->get_logger(),
       "Sensor origin at (%.2f, %.2f) is out of map bounds. The costmap cannot raytrace for it.",
       ox, oy);
     return;
@@ -564,27 +593,30 @@ void ObstacleLayer::raytraceFreespace(
     // and finally... we can execute our trace to clear obstacles along that line
     raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
 
-    updateRaytraceBounds(ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x,
+    updateRaytraceBounds(
+      ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x,
       max_y);
   }
 }
 
-void ObstacleLayer::activate()
+void
+ObstacleLayer::activate()
 {
+  for (auto & notifier : observation_notifiers_) {
+    notifier->clear();
+  }
+
   // if we're stopped we need to re-subscribe to topics
   for (unsigned int i = 0; i < observation_subscribers_.size(); ++i) {
     if (observation_subscribers_[i] != NULL) {
       observation_subscribers_[i]->subscribe();
     }
   }
-
-  for (unsigned int i = 0; i < observation_buffers_.size(); ++i) {
-    if (observation_buffers_[i]) {
-      observation_buffers_[i]->resetLastUpdated();
-    }
-  }
+  resetBuffersLastUpdated();
 }
-void ObstacleLayer::deactivate()
+
+void
+ObstacleLayer::deactivate()
 {
   for (unsigned int i = 0; i < observation_subscribers_.size(); ++i) {
     if (observation_subscribers_[i] != NULL) {
@@ -593,7 +625,8 @@ void ObstacleLayer::deactivate()
   }
 }
 
-void ObstacleLayer::updateRaytraceBounds(
+void
+ObstacleLayer::updateRaytraceBounds(
   double ox, double oy, double wx, double wy, double range,
   double * min_x, double * min_y, double * max_x, double * max_y)
 {
@@ -604,12 +637,22 @@ void ObstacleLayer::updateRaytraceBounds(
   touch(ex, ey, min_x, min_y, max_x, max_y);
 }
 
-void ObstacleLayer::reset()
+void
+ObstacleLayer::reset()
 {
-  deactivate();
   resetMaps();
+  resetBuffersLastUpdated();
   current_ = true;
-  activate();
+}
+
+void
+ObstacleLayer::resetBuffersLastUpdated()
+{
+  for (unsigned int i = 0; i < observation_buffers_.size(); ++i) {
+    if (observation_buffers_[i]) {
+      observation_buffers_[i]->resetLastUpdated();
+    }
+  }
 }
 
 }  // namespace nav2_costmap_2d

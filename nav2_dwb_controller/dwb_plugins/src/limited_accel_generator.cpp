@@ -35,39 +35,37 @@
 #include "dwb_plugins/limited_accel_generator.hpp"
 #include <vector>
 #include <memory>
+#include <string>
 #include "nav_2d_utils/parameters.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "dwb_core/exceptions.hpp"
-#include "nav2_util/duration_conversions.hpp"
+#include "nav2_util/node_utils.hpp"
 
 namespace dwb_plugins
 {
 
-void LimitedAccelGenerator::initialize(const std::shared_ptr<rclcpp::Node> & nh)
+void LimitedAccelGenerator::initialize(
+  const nav2_util::LifecycleNode::SharedPtr & nh,
+  const std::string & plugin_name)
 {
-  StandardTrajectoryGenerator::initialize(nh);
-  if (nh->get_parameter("sim_period", acceleration_time_)) {
+  plugin_name_ = plugin_name;
+  StandardTrajectoryGenerator::initialize(nh, plugin_name_);
+
+  nav2_util::declare_parameter_if_not_declared(nh, plugin_name + ".sim_period");
+
+  if (nh->get_parameter(plugin_name + ".sim_period", acceleration_time_)) {
   } else {
     double controller_frequency = nav_2d_utils::searchAndGetParam(
       nh, "controller_frequency", 20.0);
     if (controller_frequency > 0) {
       acceleration_time_ = 1.0 / controller_frequency;
     } else {
-      RCLCPP_WARN(rclcpp::get_logger("LimitedAccelGenerator"),
+      RCLCPP_WARN(
+        rclcpp::get_logger("LimitedAccelGenerator"),
         "A controller_frequency less than or equal to 0 has been set. "
         "Ignoring the parameter, assuming a rate of 20Hz");
       acceleration_time_ = 0.05;
     }
-  }
-}
-
-void LimitedAccelGenerator::checkUseDwaParam(const std::shared_ptr<rclcpp::Node> & nh)
-{
-  bool use_dwa;
-  nh->get_parameter_or("use_dwa", use_dwa, true);
-  if (!use_dwa) {
-    throw nav_core2::PlannerException("Deprecated parameter use_dwa set to false. "
-            "Please use StandardTrajectoryGenerator for that functionality.");
   }
 }
 
@@ -77,25 +75,12 @@ void LimitedAccelGenerator::startNewIteration(const nav_2d_msgs::msg::Twist2D & 
   velocity_iterator_->startNewIteration(current_velocity, acceleration_time_);
 }
 
-dwb_msgs::msg::Trajectory2D LimitedAccelGenerator::generateTrajectory(
-  const geometry_msgs::msg::Pose2D & start_pose,
-  const nav_2d_msgs::msg::Twist2D &,
-  const nav_2d_msgs::msg::Twist2D & cmd_vel)
+nav_2d_msgs::msg::Twist2D LimitedAccelGenerator::computeNewVelocity(
+  const nav_2d_msgs::msg::Twist2D & cmd_vel,
+  const nav_2d_msgs::msg::Twist2D & /*start_vel*/,
+  const double /*dt*/)
 {
-  dwb_msgs::msg::Trajectory2D traj;
-  traj.velocity = cmd_vel;
-  traj.duration = nav2_util::duration_from_seconds(sim_time_);
-  geometry_msgs::msg::Pose2D pose = start_pose;
-
-  std::vector<double> steps = getTimeSteps(cmd_vel);
-  traj.poses.push_back(start_pose);
-  for (double dt : steps) {
-    //  update the position using the constant cmd_vel
-    pose = computeNewPosition(pose, cmd_vel, dt);
-    traj.poses.push_back(pose);
-  }
-
-  return traj;
+  return cmd_vel;
 }
 
 }  // namespace dwb_plugins

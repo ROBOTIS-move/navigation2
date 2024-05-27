@@ -36,6 +36,9 @@ add_library(${PROJECT_NAME} SHARED
     src/twirling.cpp
 )
 
+# prevent pluginlib from using boost
+target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
 set(dependencies
   angles
   nav2_costmap_2d
@@ -57,13 +60,13 @@ ament_target_dependencies(${PROJECT_NAME}
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
-        RUNTIME DESTINATION lib/${PROJECT_NAME}
+        RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/
         DESTINATION include/
 )
 install(FILES default_critics.xml
-        DESTINATION share
+        DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -78,6 +81,7 @@ ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(
   ${dependencies}
 )
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
 pluginlib_export_plugin_description_file(dwb_core default_critics.xml)
 

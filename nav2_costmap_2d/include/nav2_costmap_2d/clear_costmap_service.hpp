@@ -21,8 +21,10 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_msgs/srv/clear_costmap_except_region.hpp"
+#include "nav2_msgs/srv/clear_costmap_around_robot.hpp"
 #include "nav2_msgs/srv/clear_entire_costmap.hpp"
 #include "nav2_costmap_2d/costmap_layer.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 
 namespace nav2_costmap_2d
 {
@@ -32,26 +34,28 @@ class Costmap2DROS;
 class ClearCostmapService
 {
 public:
-  ClearCostmapService(rclcpp::Node::SharedPtr & node, Costmap2DROS & costmap);
+  ClearCostmapService(nav2_util::LifecycleNode::SharedPtr node, Costmap2DROS & costmap);
 
   ClearCostmapService() = delete;
 
   // Clears the region outside of a user-specified area reverting to the static map
   void clearExceptRegion(double reset_distance = 3.0);
 
+  // Clears within a window around the robot
+  void clearAroundRobot(double window_size_x, double window_size_y);
+
   // Clears all layers
   void clearEntirely();
 
 private:
   // The ROS node to use for getting parameters, creating the service and logging
-  rclcpp::Node::SharedPtr node_;
+  nav2_util::LifecycleNode::SharedPtr node_;
 
   // The costmap to clear
   Costmap2DROS & costmap_;
 
   // Clearing parameters
   unsigned char reset_value_;
-  double reset_distance_;
   std::vector<std::string> clearable_layers_;
 
   // Server for clearing the costmap
@@ -60,6 +64,12 @@ private:
     const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<nav2_msgs::srv::ClearCostmapExceptRegion::Request> request,
     const std::shared_ptr<nav2_msgs::srv::ClearCostmapExceptRegion::Response> response);
+
+  rclcpp::Service<nav2_msgs::srv::ClearCostmapAroundRobot>::SharedPtr clear_around_service_;
+  void clearAroundRobotCallback(
+    const std::shared_ptr<rmw_request_id_t> request_header,
+    const std::shared_ptr<nav2_msgs::srv::ClearCostmapAroundRobot::Request> request,
+    const std::shared_ptr<nav2_msgs::srv::ClearCostmapAroundRobot::Response> response);
 
   rclcpp::Service<nav2_msgs::srv::ClearEntireCostmap>::SharedPtr clear_entire_service_;
   void clearEntireCallback(

@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_util/lifecycle_utils.hpp"
 #include <thread>
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "lifecycle_msgs/msg/state.hpp"
-#include "gtest/gtest.h"
+#include <vector>
 
-using nav2_util::bringup_lifecycle_nodes;
+#include "gtest/gtest.h"
+#include "nav2_util/lifecycle_utils.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+using nav2_util::startup_lifecycle_nodes;
+using nav2_util::reset_lifecycle_nodes;
 
 class RclCppFixture
 {
@@ -29,7 +31,7 @@ public:
 };
 RclCppFixture g_rclcppfixture;
 
-void SpinNodesUntilActivated(
+void SpinNodesUntilDone(
   std::vector<rclcpp_lifecycle::LifecycleNode::SharedPtr> nodes,
   std::atomic<bool> * test_done)
 {
@@ -49,8 +51,9 @@ TEST(Lifecycle, interface)
   nodes.push_back(rclcpp_lifecycle::LifecycleNode::make_shared("bar"));
 
   std::atomic<bool> done(false);
-  std::thread node_thread(SpinNodesUntilActivated, nodes, &done);
-  bringup_lifecycle_nodes("/foo:/bar");
+  std::thread node_thread(SpinNodesUntilDone, nodes, &done);
+  startup_lifecycle_nodes("/foo:/bar");
+  reset_lifecycle_nodes("/foo:/bar");
   done = true;
   node_thread.join();
   SUCCEED();

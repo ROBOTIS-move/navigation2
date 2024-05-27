@@ -38,13 +38,15 @@
 #include <string>
 #include <vector>
 #include <memory>
+
 #include "rclcpp/rclcpp.hpp"
-#include "dwb_core/common_types.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "nav_2d_msgs/msg/twist2_d.hpp"
 #include "nav_2d_msgs/msg/path2_d.hpp"
 #include "dwb_msgs/msg/trajectory2_d.hpp"
 #include "sensor_msgs/msg/point_cloud.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 
 namespace dwb_core
 {
@@ -68,14 +70,14 @@ namespace dwb_core
  *       This can be used for stateful critics that monitor the trajectory through time.
  *
  *  Optionally, there is also a debugging mechanism for certain types of critics in the
- *  addGridScores method. If the score for a trajectory depends on its relationship to
- *  the costmap, addGridScores can provide that information to the dwb_core
+ *  addCriticVisualization method. If the score for a trajectory depends on its relationship to
+ *  the costmap, addCriticVisualization can provide that information to the dwb_core
  *  which will publish the grid scores as a PointCloud2.
  */
 class TrajectoryCritic
 {
 public:
-  typedef std::shared_ptr<dwb_core::TrajectoryCritic> Ptr;
+  using Ptr = std::shared_ptr<dwb_core::TrajectoryCritic>;
 
   virtual ~TrajectoryCritic() {}
 
@@ -90,14 +92,21 @@ public:
    * @param costmap_ros Pointer to the costmap
    */
   void initialize(
-    const std::shared_ptr<rclcpp::Node> & nh,
+    const nav2_util::LifecycleNode::SharedPtr & nh,
     std::string & name,
-    CostmapROSPtr costmap_ros)
+    std::string & ns,
+    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
   {
     name_ = name;
     costmap_ros_ = costmap_ros;
     nh_ = nh;
-    nh_->get_parameter_or(name_ + ".scale", scale_, 1.0);
+    dwb_plugin_name_ = ns;
+    if (!nh_->has_parameter(dwb_plugin_name_ + "." + name_ + ".scale")) {
+      nh_->declare_parameter(
+        dwb_plugin_name_ + "." + name_ + ".scale",
+        rclcpp::ParameterValue(1.0));
+    }
+    nh_->get_parameter(dwb_plugin_name_ + "." + name_ + ".scale", scale_);
     onInit();
   }
   virtual void onInit() {}
@@ -144,7 +153,7 @@ public:
   /**
    * @brief Add information to the given pointcloud for debugging costmap-grid based scores
    *
-   * addGridScores is an optional debugging mechanism for providing rich information
+   * addCriticVisualization is an optional debugging mechanism for providing rich information
    * about the cost for certain trajectories. Some critics will have scoring mechanisms
    * wherein there will be some score for each cell in the costmap. This could be as
    * straightforward as the cost in the costmap, or it could be the number of cells away
@@ -157,7 +166,7 @@ public:
    *
    * @param pc PointCloud to add channels to
    */
-  virtual void addGridScores(sensor_msgs::msg::PointCloud &) {}
+  virtual void addCriticVisualization(sensor_msgs::msg::PointCloud &) {}
 
   std::string getName()
   {
@@ -169,9 +178,10 @@ public:
 
 protected:
   std::string name_;
-  CostmapROSPtr costmap_ros_;
+  std::string dwb_plugin_name_;
+  std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
   double scale_;
-  std::shared_ptr<rclcpp::Node> nh_;
+  nav2_util::LifecycleNode::SharedPtr nh_;
 };
 
 }  // namespace dwb_core

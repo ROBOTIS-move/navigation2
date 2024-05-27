@@ -10,6 +10,7 @@ find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
 
 nav2_package()
 
@@ -21,6 +22,7 @@ set(dependencies
   tf2
   tf2_geometry_msgs
   nav2_msgs
+  nav2_util
 )
 
 include_directories(
@@ -41,10 +43,22 @@ ament_target_dependencies(path_ops
   ${dependencies}
 )
 
-install(TARGETS conversions path_ops
+add_library(tf_help SHARED
+  src/tf_help.cpp
+)
+
+target_link_libraries(tf_help
+  conversions
+)
+
+ament_target_dependencies(tf_help
+  ${dependencies}
+)
+
+install(TARGETS conversions path_ops tf_help
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
-        RUNTIME DESTINATION lib/${PROJECT_NAME}
+        RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/
         DESTINATION include/
@@ -58,7 +72,7 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_include_directories(include)
-ament_export_libraries(conversions path_ops)
+ament_export_libraries(conversions path_ops tf_help)
 ament_export_dependencies(${dependencies})
 
 ament_package()

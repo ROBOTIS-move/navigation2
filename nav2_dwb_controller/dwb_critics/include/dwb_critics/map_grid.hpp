@@ -61,7 +61,7 @@ public:
   // Standard TrajectoryCritic Interface
   void onInit() override;
   double scoreTrajectory(const dwb_msgs::msg::Trajectory2D & traj) override;
-  void addGridScores(sensor_msgs::msg::PointCloud & pc) override;
+  void addCriticVisualization(sensor_msgs::msg::PointCloud & pc) override;
   double getScale() const override {return costmap_->getResolution() * 0.5 * scale_;}
 
   // Helper Functions
@@ -109,6 +109,7 @@ protected:
 public:
     MapGridQueue(nav2_costmap_2d::Costmap2D & costmap, MapGridCritic & parent)
     : costmap_queue::CostmapQueue(costmap, true), parent_(parent) {}
+    virtual ~MapGridQueue() = default;
     bool validCellToQueue(const costmap_queue::CellData & cell) override;
 
 protected:
@@ -118,7 +119,7 @@ protected:
   /**
    * @brief Clear the queuDWB_CRITICS_MAP_GRID_He and set cell_values_ to the appropriate number of unreachableCellScore
    */
-  void reset();
+  void reset() override;
 
   /**
    * @brief Go through the queue and set the cells to the Manhattan distance from their parents

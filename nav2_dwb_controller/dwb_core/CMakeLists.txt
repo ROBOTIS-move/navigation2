@@ -15,6 +15,8 @@ find_package(visualization_msgs REQUIRED)
 find_package(nav_2d_utils REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(nav2_core REQUIRED)
 
 nav2_package()
 
@@ -35,13 +37,20 @@ set(dependencies
   nav_2d_utils
   nav_msgs
   tf2_ros
+  nav2_util
+  nav2_core
 )
 
 add_library(dwb_core SHARED
-  src/dwb_core.cpp
+  src/dwb_local_planner.cpp
   src/publisher.cpp
   src/illegal_trajectory_tracker.cpp
+  src/trajectory_utils.cpp
 )
+
+# prevent pluginlib from using boost
+target_compile_definitions(dwb_core PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
 ament_target_dependencies(dwb_core
   ${dependencies}
 )
@@ -49,7 +58,7 @@ ament_target_dependencies(dwb_core
 install(TARGETS dwb_core
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/
@@ -61,10 +70,16 @@ if(BUILD_TESTING)
   # the following line skips the linter which checks for copyrights
   set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  add_subdirectory(test)
 endif()
 
 ament_export_include_directories(include)
 ament_export_libraries(dwb_core)
 ament_export_dependencies(${dependencies})
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+pluginlib_export_plugin_description_file(nav2_core local_planner_plugin.xml)
 
 ament_package()

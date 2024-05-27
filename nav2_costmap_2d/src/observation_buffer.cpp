@@ -47,13 +47,14 @@
 namespace nav2_costmap_2d
 {
 ObservationBuffer::ObservationBuffer(
-  rclcpp::Node::SharedPtr nh, std::string topic_name, double observation_keep_time,
+  nav2_util::LifecycleNode::SharedPtr nh, std::string topic_name, double observation_keep_time,
   double expected_update_rate,
   double min_obstacle_height, double max_obstacle_height, double obstacle_range,
   double raytrace_range, tf2_ros::Buffer & tf2_buffer, std::string global_frame,
   std::string sensor_frame, double tf_tolerance)
-: nh_(nh), tf2_buffer_(tf2_buffer), observation_keep_time_(observation_keep_time),
-  expected_update_rate_(expected_update_rate),
+: tf2_buffer_(tf2_buffer),
+  observation_keep_time_(rclcpp::Duration::from_seconds(observation_keep_time)),
+  expected_update_rate_(rclcpp::Duration::from_seconds(expected_update_rate)), nh_(nh),
   last_updated_(nh->now()), global_frame_(global_frame), sensor_frame_(sensor_frame),
   topic_name_(topic_name),
   min_obstacle_height_(min_obstacle_height), max_obstacle_height_(max_obstacle_height),
@@ -71,10 +72,12 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
   std::string tf_error;
 
   geometry_msgs::msg::TransformStamped transformStamped;
-  if (!tf2_buffer_.canTransform(new_global_frame, global_frame_, tf2_ros::fromMsg(transform_time),
-    tf2::durationFromSec(tf_tolerance_), &tf_error))
+  if (!tf2_buffer_.canTransform(
+      new_global_frame, global_frame_, tf2_ros::fromMsg(transform_time),
+      tf2::durationFromSec(tf_tolerance_), &tf_error))
   {
-    RCLCPP_ERROR(rclcpp::get_logger(
+    RCLCPP_ERROR(
+      rclcpp::get_logger(
         "nav2_costmap_2d"), "Transform between %s and %s with tolerance %.2f failed: %s.",
       new_global_frame.c_str(),
       global_frame_.c_str(), tf_tolerance_, tf_error.c_str());
@@ -92,13 +95,15 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
       origin.point = obs.origin_;
 
       // we need to transform the origin of the observation to the new global frame
-      tf2_buffer_.transform(origin, origin, new_global_frame);
+      tf2_buffer_.transform(origin, origin, new_global_frame, tf2::durationFromSec(tf_tolerance_));
       obs.origin_ = origin.point;
 
       // we also need to transform the cloud of the observation to the new global frame
-      tf2_buffer_.transform(*(obs.cloud_), *(obs.cloud_), new_global_frame);
+      tf2_buffer_.transform(
+        *(obs.cloud_), *(obs.cloud_), new_global_frame, tf2::durationFromSec(tf_tolerance_));
     } catch (tf2::TransformException & ex) {
-      RCLCPP_ERROR(rclcpp::get_logger(
+      RCLCPP_ERROR(
+        rclcpp::get_logger(
           "nav2_costmap_2d"), "TF Error attempting to transform an observation from %s to %s: %s",
         global_frame_.c_str(),
         new_global_frame.c_str(), ex.what());
@@ -185,7 +190,8 @@ void ObservationBuffer::bufferCloud(const sensor_msgs::msg::PointCloud2 & cloud)
   } catch (tf2::TransformException & ex) {
     // if an exception occurs, we need to remove the empty observation from the list
     observation_list_.pop_front();
-    RCLCPP_ERROR(rclcpp::get_logger(
+    RCLCPP_ERROR(
+      rclcpp::get_logger(
         "nav2_costmap_2d"),
       "TF Exception that should never happen for sensor frame: %s, cloud frame: %s, %s",
       sensor_frame_.c_str(),
@@ -244,11 +250,12 @@ bool ObservationBuffer::isCurrent() const
 
   bool current = (nh_->now() - last_updated_) <= expected_update_rate_;
   if (!current) {
-    RCLCPP_WARN(rclcpp::get_logger(
+    RCLCPP_WARN(
+      rclcpp::get_logger(
         "nav2_costmap_2d"),
       "The %s observation buffer has not been updated for %.2f seconds, and it should be updated every %.2f seconds.", //NOLINT
       topic_name_.c_str(),
-      (nh_->now() - last_updated_), expected_update_rate_);
+      (nh_->now() - last_updated_).seconds(), expected_update_rate_.seconds());
   }
   return current;
 }

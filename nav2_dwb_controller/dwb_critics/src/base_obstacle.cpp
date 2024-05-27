@@ -36,6 +36,7 @@
 #include "dwb_core/exceptions.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
+#include "nav2_util/node_utils.hpp"
 
 PLUGINLIB_EXPORT_CLASS(dwb_critics::BaseObstacleCritic, dwb_core::TrajectoryCritic)
 
@@ -45,7 +46,11 @@ namespace dwb_critics
 void BaseObstacleCritic::onInit()
 {
   costmap_ = costmap_ros_->getCostmap();
-  nh_->get_parameter_or(name_ + ".sum_scores", sum_scores_, false);
+
+  nav2_util::declare_parameter_if_not_declared(
+    nh_,
+    dwb_plugin_name_ + "." + name_ + ".sum_scores", rclcpp::ParameterValue(false));
+  nh_->get_parameter(dwb_plugin_name_ + "." + name_ + ".sum_scores", sum_scores_);
 }
 
 double BaseObstacleCritic::scoreTrajectory(const dwb_msgs::msg::Trajectory2D & traj)
@@ -64,11 +69,13 @@ double BaseObstacleCritic::scorePose(const geometry_msgs::msg::Pose2D & pose)
 {
   unsigned int cell_x, cell_y;
   if (!costmap_->worldToMap(pose.x, pose.y, cell_x, cell_y)) {
-    throw nav_core2::IllegalTrajectoryException(name_, "Trajectory Goes Off Grid.");
+    throw dwb_core::
+          IllegalTrajectoryException(name_, "Trajectory Goes Off Grid.");
   }
   unsigned char cost = costmap_->getCost(cell_x, cell_y);
   if (!isValidCost(cost)) {
-    throw nav_core2::IllegalTrajectoryException(name_, "Trajectory Hits Obstacle.");
+    throw dwb_core::
+          IllegalTrajectoryException(name_, "Trajectory Hits Obstacle.");
   }
   return cost;
 }
@@ -80,7 +87,7 @@ bool BaseObstacleCritic::isValidCost(const unsigned char cost)
          cost != nav2_costmap_2d::NO_INFORMATION;
 }
 
-void BaseObstacleCritic::addGridScores(sensor_msgs::msg::PointCloud & pc)
+void BaseObstacleCritic::addCriticVisualization(sensor_msgs::msg::PointCloud & pc)
 {
   sensor_msgs::msg::ChannelFloat32 grid_scores;
   grid_scores.name = name_;

@@ -4,10 +4,10 @@ ENABLE_BUILD=true
 ENABLE_ROS2=true
 
 if [ "$ROS2_DISTRO" = "" ]; then
-  export ROS2_DISTRO=bouncy
+  export ROS2_DISTRO=foxy
 fi
-if [ "$ROS2_DISTRO" != "bouncy" ]; then
-  echo "ROS2_DISTRO variable must be set to bouncy"
+if [ "$ROS2_DISTRO" != "foxy" ]; then
+  echo "ROS2_DISTRO variable must be set to foxy"
   exit 1
 fi
 
@@ -24,7 +24,7 @@ for opt in "$@" ; do
     *)
       echo "Invalid option: $opt"
       echo "Valid options:"
-      echo "--no-ros2       Uses the binary distribution of ROS2 bouncy"
+      echo "--no-ros2       Uses the binary distribution of ROS2 foxy"
       echo "--download-only Skips the build step and only downloads the code"
       exit 1
     ;;
@@ -63,8 +63,8 @@ download_ros2() {
 
 download_ros2_dependencies() {
   echo "Downloading the dependencies workspace"
-  mkdir -p navstack_dependencies_ws/src
-  cd navstack_dependencies_ws
+  mkdir -p ros2_nav_dependencies_ws/src
+  cd ros2_nav_dependencies_ws
   vcs import src < ${CWD}/navigation2_ws/src/navigation2/tools/ros2_dependencies.repos
   return_to_root_dir
 }
@@ -88,6 +88,10 @@ download_all() {
   fi
 }
 
+rosdep_install() {
+  rosdep install -y -r -q --from-paths . --ignore-src --rosdistro $ROS2_DISTRO --skip-keys "catkin"
+}
+
 echo "This script will download the ROS 2 latest release workspace, the"
 echo "dependencies workspace and the ros_navstack_port workspace to the"
 echo "current directory and then build them all. There should be no ROS"
@@ -100,6 +104,7 @@ read -r REPLY
 echo
 if [ "$REPLY" = "y" ]; then
   download_all
+  rosdep_install
   if [ "$ENABLE_BUILD" = true ]; then
     $CWD/navigation2_ws/src/navigation2/tools/build_all.sh
   fi
