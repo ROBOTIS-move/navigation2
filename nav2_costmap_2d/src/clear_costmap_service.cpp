@@ -166,7 +166,7 @@ void ClearCostmapService::clearLayerExceptRegion(
 
   geometry_msgs::msg::PoseStamped pose;
   if (!costmap_.getRobotPose(pose)) {
-    return false;
+    return;
   }
   const double yaw = tf2::getYaw(pose.pose.orientation);
 
