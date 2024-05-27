@@ -170,11 +170,10 @@ void ClearCostmapService::clearLayerExceptRegion(
   }
   const double yaw = tf2::getYaw(pose.pose.orientation);
 
-
-  double start_point_x = pose_x - (reset_distance / 2) * sin(yaw);
-  double start_point_y = pose_y - (reset_distance / 2) * cos(yaw);
-  double end_point_x = pose_x + 0.269 * sin(yaw);
-  double end_point_y = start_point_y + reset_distance * cos(yaw);
+  double start_point_x = pose_x - (reset_distance / 2) * cos(yaw);
+  double start_point_y = pose_y - (reset_distance / 2) * sin(yaw);
+  double end_point_x = pose_x + 0.269 * cos(yaw);
+  double end_point_y = pose_y + (reset_distance / 2) * sin(yaw);
 
   int start_x, start_y, end_x, end_y;
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
