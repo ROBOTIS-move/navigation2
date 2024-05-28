@@ -42,6 +42,11 @@
 #include <nav2_costmap_2d/layer.hpp>
 #include <nav2_costmap_2d/layered_costmap.hpp>
 
+struct Point {
+  double x;
+  double y;
+};
+
 namespace nav2_costmap_2d
 {
 
@@ -57,11 +62,6 @@ public:
   {
     return true;
   }
-
-  struct Point {
-    double x;
-    double y;
-  };
 
   virtual void matchSize();
 
