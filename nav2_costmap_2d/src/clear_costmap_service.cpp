@@ -160,26 +160,42 @@ bool ClearCostmapService::isClearable(const string & layer_name) const
 }
 
 void ClearCostmapService::clearLayerExceptRegion(
-  shared_ptr<CostmapLayer> & costmap, double pose_x, double pose_y, double reset_distance)
+  std::shared_ptr<CostmapLayer> & costmap, double pose_x, double pose_y, double reset_distance)
 {
   std::unique_lock<Costmap2D::mutex_t> lock(*(costmap->getMutex()));
 
-  // geometry_msgs::msg::PoseStamped pose;
-  // if (!costmap_.getRobotPose(pose)) {
-  //   return;
-  // }
-  // const double yaw = tf2::getYaw(pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped pose;
+  if (!costmap->getRobotPose(pose)) {
+    return;
+  }
+  const double yaw = tf2::getYaw(pose.pose.orientation);
 
-  double start_point_x = pose_x - (reset_distance / 2) ;
-  double start_point_y = pose_y - (reset_distance / 2) ;
-  double end_point_x = pose_x + 0.269 ;
-  double end_point_y = pose_y + (reset_distance / 2) ;
+  // 사각형의 꼭짓점 계산
+  double half_dist = reset_distance / 2.0;
+  std::vector<Point> corners = {
+    {pose_x - half_dist, pose_y - half_dist},
+    {pose_x + half_dist, pose_y - half_dist},
+    {pose_x + half_dist, pose_y + half_dist},
+    {pose_x - half_dist, pose_y + half_dist}
+  };
 
-  int start_x, start_y, end_x, end_y;
-  costmap->worldToMapEnforceBounds(start_point_x, start_point_y, start_x, start_y);
-  costmap->worldToMapEnforceBounds(end_point_x, end_point_y, end_x, end_y);
+  // 회전된 사각형의 꼭짓점 계산
+  std::vector<Point> rotated_corners;
+  for (const auto& corner : corners) {
+    Point rotated_point = rotatePoint(pose_x, pose_y, yaw, corner);
+    rotated_corners.push_back(rotated_point);
+  }
 
-  costmap->clearArea(start_x, start_y, end_x, end_y);
+  // 변환된 좌표를 맵 좌표로 변환
+  std::vector<Point> map_corners;
+  for (const auto& corner : rotated_corners) {
+    int map_x, map_y;
+    costmap->worldToMapEnforceBounds(corner.x, corner.y, map_x, map_y);
+    map_corners.push_back({static_cast<double>(map_x), static_cast<double>(map_y)});
+  }
+
+  // 회전된 사각형의 꼭짓점을 clearArea 함수에 전달
+  costmap->clearArea(map_corners);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();

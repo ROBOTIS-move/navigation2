@@ -47,6 +47,29 @@ public:
   // Clears all layers
   void clearEntirely();
 
+  struct Point {
+    double x;
+    double y;
+  };
+
+  Point rotatePoint(double cx, double cy, double angle, Point p) {
+    double s = sin(angle);
+    double c = cos(angle);
+
+    // 원점을 중심으로 회전
+    p.x -= cx;
+    p.y -= cy;
+
+    double xnew = p.x * c - p.y * s;
+    double ynew = p.x * s + p.y * c;
+
+    // 다시 원점에서의 위치로 이동
+    p.x = xnew + cx;
+    p.y = ynew + cy;
+
+    return p;
+  }
+
 private:
   // The ROS node to use for getting parameters, creating the service and logging
   nav2_util::LifecycleNode::SharedPtr node_;

@@ -58,9 +58,14 @@ public:
     return true;
   }
 
+  struct Point {
+    double x;
+    double y;
+  };
+
   virtual void matchSize();
 
-  virtual void clearArea(int start_x, int start_y, int end_x, int end_y);
+  virtual void clearArea(const std::vector<Point>& rotated_corners);
 
   /**
    * If an external source changes values in the costmap,
@@ -72,6 +77,21 @@ public:
    * @param my1 Maximum y value of the bounding box
    */
   void addExtraBounds(double mx0, double my0, double mx1, double my1);
+
+  // 교차 수 알고리즘을 사용하여 다각형 내부에 점이 있는지 확인하는 함수
+  bool isPointInPolygon(Point p, const std::vector<Point>& vertices) {
+    int n = vertices.size();
+    bool inside = false;
+
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+      if (((vertices[i].y > p.y) != (vertices[j].y > p.y)) &&
+          (p.x < (vertices[j].x - vertices[i].x) * (p.y - vertices[i].y) / (vertices[j].y - vertices[i].y) + vertices[i].x)) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
 
 protected:
   /*

@@ -61,20 +61,27 @@ void CostmapLayer::matchSize()
     master->getOriginX(), master->getOriginY());
 }
 
-void CostmapLayer::clearArea(int start_x, int start_y, int end_x, int end_y)
-{
+void CostmapLayer::clearArea(const std::vector<Point>& rotated_corners) {
   unsigned char * grid = getCharMap();
-  for (int x = 0; x < static_cast<int>(getSizeInCellsX()); x++) {
-    bool xrange = x > start_x && x < end_x;
 
-    for (int y = 0; y < static_cast<int>(getSizeInCellsY()); y++) {
-      if (xrange && y > start_y && y < end_y) {
+  // 그리드 크기
+  int size_x = static_cast<int>(getSizeInCellsX());
+  int size_y = static_cast<int>(getSizeInCellsY());
+
+  // 모든 그리드 셀을 검사
+  for (int x = 0; x < size_x; x++) {
+    for (int y = 0; y < size_y; y++) {
+      Point p = {static_cast<double>(x), static_cast<double>(y)};
+
+      // 현재 점이 회전된 사각형 내부에 있는지 확인
+      if (isPointInPolygon(p, rotated_corners)) {
         continue;
       }
       int index = getIndex(x, y);
       if (grid[index] != NO_INFORMATION) {
         grid[index] = NO_INFORMATION;
       }
+
     }
   }
 }
