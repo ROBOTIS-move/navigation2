@@ -26,11 +26,6 @@
 #include "nav2_costmap_2d/costmap_layer.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 
-struct Point {
-  double x;
-  double y;
-};
-
 namespace nav2_costmap_2d
 {
 
