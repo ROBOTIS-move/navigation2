@@ -77,11 +77,11 @@ void CostmapLayer::clearArea(const std::vector<Point>& rotated_corners) {
       if (isPointInPolygon(p, rotated_corners)) {
         continue;
       }
+
       int index = getIndex(x, y);
       if (grid[index] != NO_INFORMATION) {
         grid[index] = NO_INFORMATION;
       }
-
     }
   }
 }
