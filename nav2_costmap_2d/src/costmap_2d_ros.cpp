@@ -206,10 +206,10 @@ Costmap2DROS::on_activate(const rclcpp_lifecycle::State & /*state*/)
     !tf_buffer_->canTransform(
       global_frame_, robot_base_frame_, tf2::TimePointZero, &tf_error))
   {
-    RCLCPP_INFO(
-      get_logger(), "Timed out waiting for transform from %s to %s"
-      " to become available, tf error: %s",
-      robot_base_frame_.c_str(), global_frame_.c_str(), tf_error.c_str());
+    // RCLCPP_INFO(
+    //   get_logger(), "Timed out waiting for transform from %s to %s"
+    //   " to become available, tf error: %s",
+    //   robot_base_frame_.c_str(), global_frame_.c_str(), tf_error.c_str());
 
     // The error string will accumulate and errors will typically be the same, so the last
     // will do for the warning above. Reset the string here to avoid accumulation
