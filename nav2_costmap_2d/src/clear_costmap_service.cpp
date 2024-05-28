@@ -165,7 +165,7 @@ void ClearCostmapService::clearLayerExceptRegion(
   std::unique_lock<Costmap2D::mutex_t> lock(*(costmap->getMutex()));
 
   geometry_msgs::msg::PoseStamped pose;
-  if (!costmap.getRobotPose(pose)) {
+  if (!costmap_.getRobotPose(pose)) {
     return;
   }
   const double yaw = tf2::getYaw(pose.pose.orientation);
