@@ -62,7 +62,7 @@ void CostmapLayer::matchSize()
 }
 
 void CostmapLayer::clearArea(const std::vector<Point>& rotated_corners) {
-  unsigned char * grid = getCharMap();
+  unsigned char * grid = master_grid.getCharMap();
 
   // 그리드 크기
   int size_x = static_cast<int>(getSizeInCellsX());
