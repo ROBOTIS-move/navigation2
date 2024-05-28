@@ -85,7 +85,7 @@ Costmap2DROS::Costmap2DROS(
   client_node_ = std::make_shared<rclcpp::Node>("_", options);
   client_thread_ = std::make_unique<nav2_util::NodeThread>(client_node_);
 
-  std::vector<std::string> clearable_layers{"obstacle_layer"};
+  std::vector<std::string> clearable_layers{"obstacle_layer", "voxel_layer"};
 
   declare_parameter("always_send_full_costmap", rclcpp::ParameterValue(false));
   declare_parameter("footprint_padding", rclcpp::ParameterValue(0.01f));
