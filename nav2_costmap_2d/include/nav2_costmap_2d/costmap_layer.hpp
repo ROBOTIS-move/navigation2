@@ -78,7 +78,6 @@ public:
    */
   void addExtraBounds(double mx0, double my0, double mx1, double my1);
 
-  // 교차 수 알고리즘을 사용하여 다각형 내부에 점이 있는지 확인하는 함수
   bool isPointInPolygon(Point p, const std::vector<Point>& vertices) {
     int n = vertices.size();
     bool inside = false;

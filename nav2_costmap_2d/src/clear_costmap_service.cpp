@@ -170,7 +170,6 @@ void ClearCostmapService::clearLayerExceptRegion(
   }
   const double yaw = tf2::getYaw(pose.pose.orientation);
 
-  // 사각형의 꼭짓점 계산
   double half_dist = reset_distance / 2.0;
   std::vector<Point> corners = {
     {pose_x - half_dist, pose_y - half_dist},
@@ -179,14 +178,12 @@ void ClearCostmapService::clearLayerExceptRegion(
     {pose_x - half_dist, pose_y + half_dist}
   };
 
-  // 회전된 사각형의 꼭짓점 계산
   std::vector<Point> rotated_corners;
   for (const auto& corner : corners) {
     Point rotated_point = rotatePoint(pose_x, pose_y, yaw, corner);
     rotated_corners.push_back(rotated_point);
   }
 
-  // 변환된 좌표를 맵 좌표로 변환
   std::vector<Point> map_corners;
   for (const auto& corner : rotated_corners) {
     int map_x, map_y;
@@ -194,7 +191,6 @@ void ClearCostmapService::clearLayerExceptRegion(
     map_corners.push_back({static_cast<double>(map_x), static_cast<double>(map_y)});
   }
 
-  // 회전된 사각형의 꼭짓점을 clearArea 함수에 전달
   costmap->clearArea(map_corners);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
