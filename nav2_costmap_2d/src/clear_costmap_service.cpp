@@ -173,8 +173,8 @@ void ClearCostmapService::clearLayerExceptRegion(
   double half_dist = reset_distance / 2.0;
   std::vector<Point> corners = {
     {pose_x - half_dist, pose_y - half_dist},
-    {pose_x + 0.259, pose_y - half_dist},
-    {pose_x + 0.259, pose_y + half_dist},
+    {pose_x + 0.27, pose_y - half_dist},
+    {pose_x + 0.27, pose_y + half_dist},
     {pose_x - half_dist, pose_y + half_dist}
   };
 

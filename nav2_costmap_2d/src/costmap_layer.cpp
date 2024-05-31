@@ -64,16 +64,13 @@ void CostmapLayer::matchSize()
 void CostmapLayer::clearArea(const std::vector<Point>& rotated_corners) {
   unsigned char * grid = getCharMap();
 
-  // 그리드 크기
   int size_x = static_cast<int>(getSizeInCellsX());
   int size_y = static_cast<int>(getSizeInCellsY());
 
-  // 모든 그리드 셀을 검사
   for (int x = 0; x < size_x; x++) {
     for (int y = 0; y < size_y; y++) {
       Point p = {static_cast<double>(x), static_cast<double>(y)};
 
-      // 현재 점이 회전된 사각형 내부에 있는지 확인
       if (isPointInPolygon(p, rotated_corners)) {
         continue;
       }
