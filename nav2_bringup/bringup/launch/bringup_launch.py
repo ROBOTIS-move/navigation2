@@ -80,7 +80,7 @@ def generate_launch_description():
     #     description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
+        'autostart', default_value='false',
         description='Automatically startup the nav2 stack')
 
     # Specify the actions
