@@ -34,11 +34,15 @@ def generate_launch_description():
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
+    # lifecycle_nodes = ['controller_server',
+    #                    'planner_server',
+    #                    'recoveries_server',
+    #                    'bt_navigator',
+    #                    'waypoint_follower']
+
     lifecycle_nodes = ['controller_server',
-                       'planner_server',
-                       'recoveries_server',
-                       'bt_navigator',
-                       'waypoint_follower']
+                    'bt_navigator'
+                    ]
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -101,21 +105,21 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        Node(
-            package='nav2_planner',
-            executable='planner_server',
-            name='planner_server',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+        # Node(
+        #     package='nav2_planner',
+        #     executable='planner_server',
+        #     name='planner_server',
+        #     output='screen',
+        #     parameters=[configured_params],
+        #     remappings=remappings),
 
-        Node(
-            package='nav2_recoveries',
-            executable='recoveries_server',
-            name='recoveries_server',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+        # Node(
+        #     package='nav2_recoveries',
+        #     executable='recoveries_server',
+        #     name='recoveries_server',
+        #     output='screen',
+        #     parameters=[configured_params],
+        #     remappings=remappings),
 
         Node(
             package='nav2_bt_navigator',
@@ -125,13 +129,13 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        Node(
-            package='nav2_waypoint_follower',
-            executable='waypoint_follower',
-            name='waypoint_follower',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+        # Node(
+        #     package='nav2_waypoint_follower',
+        #     executable='waypoint_follower',
+        #     name='waypoint_follower',
+        #     output='screen',
+        #     parameters=[configured_params],
+        #     remappings=remappings),
 
         Node(
             package='nav2_lifecycle_manager',
