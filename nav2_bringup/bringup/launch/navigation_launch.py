@@ -105,13 +105,13 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        Node(
-            package='nav2_planner',
-            executable='planner_server',
-            name='planner_server',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+        # Node(
+        #     package='nav2_planner',
+        #     executable='planner_server',
+        #     name='planner_server',
+        #     output='screen',
+        #     parameters=[configured_params],
+        #     remappings=remappings),
 
         # Node(
         #     package='nav2_recoveries',
@@ -121,13 +121,13 @@ def generate_launch_description():
         #     parameters=[configured_params],
         #     remappings=remappings),
 
-        Node(
-            package='nav2_bt_navigator',
-            executable='bt_navigator',
-            name='bt_navigator',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+        # Node(
+        #     package='nav2_bt_navigator',
+        #     executable='bt_navigator',
+        #     name='bt_navigator',
+        #     output='screen',
+        #     parameters=[configured_params],
+        #     remappings=remappings),
 
         # Node(
         #     package='nav2_waypoint_follower',
