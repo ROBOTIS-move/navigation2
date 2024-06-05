@@ -53,11 +53,11 @@ def generate_launch_description():
                   ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
-    # param_substitutions = {
-    #     'use_sim_time': use_sim_time,
-    #     'default_bt_xml_filename': default_bt_xml_filename,
-    #     'autostart': autostart,
-    #     'map_subscribe_transient_local': map_subscribe_transient_local}
+    param_substitutions = {
+        'use_sim_time': use_sim_time,
+        # 'default_bt_xml_filename': default_bt_xml_filename,
+        'autostart': autostart,
+        'map_subscribe_transient_local': map_subscribe_transient_local}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
