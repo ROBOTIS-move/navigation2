@@ -41,7 +41,6 @@ def generate_launch_description():
     #                    'waypoint_follower']
 
     lifecycle_nodes = ['controller_server',
-                    'bt_navigator'
                     ]
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
