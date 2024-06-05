@@ -33,11 +33,11 @@ def generate_launch_description():
     # Create the launch configuration variables
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
-    slam = LaunchConfiguration('slam')
-    map_yaml_file = LaunchConfiguration('map')
+    # slam = LaunchConfiguration('slam')
+    # map_yaml_file = LaunchConfiguration('map')
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = LaunchConfiguration('params_file')
-    default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
+    # default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     autostart = LaunchConfiguration('autostart')
 
     stdout_linebuf_envvar = SetEnvironmentVariable(
@@ -72,12 +72,12 @@ def generate_launch_description():
         default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
-    declare_bt_xml_cmd = DeclareLaunchArgument(
-        'default_bt_xml_filename',
-        default_value=os.path.join(
-            get_package_share_directory('nav2_bt_navigator'),
-            'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
-        description='Full path to the behavior tree xml file to use')
+    # declare_bt_xml_cmd = DeclareLaunchArgument(
+    #     'default_bt_xml_filename',
+    #     default_value=os.path.join(
+    #         get_package_share_directory('nav2_bt_navigator'),
+    #         'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
+    #     description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(
         'autostart', default_value='true',
@@ -133,7 +133,7 @@ def generate_launch_description():
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_autostart_cmd)
-    ld.add_action(declare_bt_xml_cmd)
+    #ld.add_action(declare_bt_xml_cmd)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(bringup_cmd_group)
